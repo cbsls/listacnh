@@ -220,16 +220,50 @@ function renderizar(){
     return;
   }
 
-  lista.innerHTML = interessados.map((x,i)=>`
-    <div class="lista-item">
-      <strong>${i+1}. ${x.nome_guerra}</strong><br>
-      ${x.nome_completo}<br>
-      Id. Func.: ${x.id_func}<br>
-      CNH atual: <strong>${x.categoria_atual}</strong> → Pretendida: <strong>${x.categoria_pretendida}</strong><br>
-      ${x.observacao ? "Obs.: " + x.observacao + "<br>" : ""}
-      <button class="danger" onclick="remover(${x.id})">Remover</button>
+  lista.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${interessados.map((x,i)=>`
+        <div style="
+          display:grid;
+          grid-template-columns: 1fr auto auto auto;
+          align-items:center;
+          gap:12px;
+          background:#f8fafc;
+          border-left:5px solid #0f4c81;
+          padding:10px 12px;
+          border-radius:10px;
+          font-size:0.95rem;
+        ">
+
+          <div style="font-weight:700;color:#0f4c81;">
+            ${i+1}. ${x.nome_guerra}
+          </div>
+
+          <div style="font-weight:600;">
+            ${x.categoria_atual}
+          </div>
+
+          <div style="font-weight:700;">
+            →
+          </div>
+
+          <div style="font-weight:600;">
+            ${x.categoria_pretendida}
+          </div>
+
+          <button onclick="remover(${x.id})" title="Excluir" style="
+            width:auto;
+            margin:0;
+            padding:6px 10px;
+            border-radius:8px;
+            background:#b91c1c;
+            color:white;
+          ">🗑️</button>
+
+        </div>
+      `).join("")}
     </div>
-  `).join("");
+  `;
 }
 
 function gerarPDF(){
