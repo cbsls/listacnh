@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interesse Troca Categoria CNH</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:#eef3f8;color:#1f2937;padding:16px}
+.container{max-width:900px;margin:auto}
+.topo{background:#0f4c81;color:white;padding:22px;border-radius:18px;text-align:center;margin-bottom:18px}
+.topo h1{font-size:1.5rem;margin-bottom:6px}
+.card{background:white;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 8px 22px rgba(0,0,0,.08)}
+label{font-weight:bold;margin-top:10px;display:block}
+select,input{width:100%;padding:12px;margin-top:6px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem}
+button{width:100%;padding:13px;margin-top:14px;border:none;border-radius:12px;background:#0f4c81;color:white;font-weight:bold;font-size:1rem}
+button.danger{background:#b91c1c}
+button.green{background:#15803d}
+.lista-item{border-left:5px solid #0f4c81;background:#f8fafc;padding:12px;border-radius:12px;margin-bottom:10px}
+.lista-item strong{color:#0f4c81}
+.vazio{text-align:center;color:#64748b;padding:20px}
+.contador{background:#edf6ff;color:#0f4c81;padding:10px;border-radius:999px;text-align:center;font-weight:bold;margin-bottom:12px}
+.status{font-size:.85rem;color:#64748b;text-align:center;margin-top:8px}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="topo">
+<h1>🚘 Interesse em Troca de Categoria CNH</h1>
+<p>Cadastro online dos militares interessados</p>
+</div>
+
+<div class="card">
+<label>Militar</label>
+<select id="militar" onchange="preencherMilitar()">
+<option value="">Selecione o militar</option>
+</select>
+
+<label>Nome completo</label>
+<input id="nomeCompleto" readonly>
+
+<label>Id. Func.</label>
+<input id="idFunc" readonly>
+
+<label>Categoria atual</label>
+<select id="categoriaAtual">
+<option value="">Selecione</option>
+<option>A</option>
+<option>B</option>
+<option>AB</option>
+<option>C</option>
+<option>D</option>
+<option>E</option>
+</select>
+
+<label>Categoria pretendida</label>
+<select id="categoriaPretendida">
+<option value="">Selecione</option>
+<option>C</option>
+<option>D</option>
+<option>E</option>
+</select>
+
+<label>Observação</label>
+<input id="observacao" placeholder="Opcional">
+
+<button onclick="adicionar()">💾 Salvar interesse</button>
+<button class="green" onclick="gerarPDF()">📄 Gerar relatório PDF</button>
+</div>
+
+<div class="card">
+<div class="contador" id="contador">Interessados: 0</div>
+<div id="lista"></div>
+<div class="status" id="status">Carregando dados online...</div>
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "COLE_AQUI_SUA_URL";
+const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_ANON_KEY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const militares = [
+["1º SGT VICENTE","ALESSANDRO BASTOS VICENTE","2614960"],
+["2º SGT ANDERSON","ANDERSON SILVA DA SILVA","2882930"],
+["SD MOTTA","CAIQUE MOTTA","4626338"],
+["1º SGT DIEFERSON","EDI DIEFERSON RIBEIRO DE VARGAS","2972719"],
+["SD CAMACHO","GABRIEL VELEDA CAMACHO","3698696"],
+["1º SGT BATISTA","JULIANO INSAURRIAGA BATISTA","2692449"],
+["SD LARSSON","LARSSON FROMMING FREDES","4490380"],
+["SD TOMASCHEWSKI","MAGNO NORNBERG TOMASCHEWSKI","3218627"],
+["1º TEN MARCELO","MARCELO BANDEIRA TAVARES","2423286"],
+["SD ISQUIERDO","MARLON ISQUIERDO AZEVEDO","3697665"],
+["SD MAX","MAX STEVENS OLIVEIRA NUNES","3084620"],
+["2º SGT LISCANO","RAFAEL LISCANO","3698530"],
+["SD BORGES","SAYMON CARLOS ARAUJO BORGES","3698440"],
+["SD SOARES","THIAGO CHAGAS SOARES","4625595"],
+["SD PEGLOW","VANDERLEI JESKE PEGLOW","4783069"],
+["SD BATISTA","VINICIUS INSAURRIAGA BATISTA","3702847"],
+["2º SGT VINICIUS","VINICIUS MACHADO DE MORAES","2910233"],
+["SD WILLIAM","WILLIAM RIBEIRO MEDEIROS","4355504"]
+];
+
+let interessados = [];
+
+function carregarMilitares(){
+  const select = document.getElementById("militar");
+  militares.forEach((m,i)=>{
+    const op = document.createElement("option");
+    op.value = i;
+    op.textContent = m[0];
+    select.appendChild(op);
+  });
+}
+
+function preencherMilitar(){
+  const i = militar.value;
+  if(i === ""){
+    nomeCompleto.value = "";
+    idFunc.value = "";
+    return;
+  }
+  nomeCompleto.value = militares[i][1];
+  idFunc.value = militares[i][2];
+}
+
+async function carregarOnline(){
+  status.textContent = "Sincronizando com Supabase...";
+
+  const { data, error } = await supabaseClient
+    .from("cnh_interessados")
+    .select("*")
+    .order("categoria_pretendida", { ascending: true })
+    .order("nome_guerra", { ascending: true });
+
+  if(error){
+    console.error(error);
+    status.textContent = "Erro ao carregar dados do Supabase.";
+    return;
+  }
+
+  interessados = data || [];
+  renderizar();
+  status.textContent = "Dados atualizados online.";
+}
+
+async function adicionar(){
+  const idx = militar.value;
+  const atual = categoriaAtual.value;
+  const pretendida = categoriaPretendida.value;
+
+  if(idx === "" || !atual || !pretendida){
+    alert("Preencha militar, categoria atual e categoria pretendida.");
+    return;
+  }
+
+  const m = militares[idx];
+
+  const registro = {
+    nome_guerra: m[0],
+    nome_completo: m[1],
+    id_func: m[2],
+    categoria_atual: atual,
+    categoria_pretendida: pretendida,
+    observacao: observacao.value || null,
+    atualizado_em: new Date().toISOString()
+  };
+
+  const { error } = await supabaseClient
+    .from("cnh_interessados")
+    .upsert(registro, { onConflict: "id_func" });
+
+  if(error){
+    console.error(error);
+    alert("Erro ao salvar no Supabase.");
+    return;
+  }
+
+  militar.value="";
+  nomeCompleto.value="";
+  idFunc.value="";
+  categoriaAtual.value="";
+  categoriaPretendida.value="";
+  observacao.value="";
+
+  await carregarOnline();
+}
+
+async function remover(id){
+  if(!confirm("Remover este interessado?")) return;
+
+  const { error } = await supabaseClient
+    .from("cnh_interessados")
+    .delete()
+    .eq("id", id);
+
+  if(error){
+    console.error(error);
+    alert("Erro ao remover.");
+    return;
+  }
+
+  await carregarOnline();
+}
+
+function renderizar(){
+  contador.textContent = "Interessados: " + interessados.length;
+
+  if(interessados.length === 0){
+    lista.innerHTML = '<div class="vazio">Nenhum interessado cadastrado ainda.</div>';
+    return;
+  }
+
+  lista.innerHTML = interessados.map((x,i)=>`
+    <div class="lista-item">
+      <strong>${i+1}. ${x.nome_guerra}</strong><br>
+      ${x.nome_completo}<br>
+      Id. Func.: ${x.id_func}<br>
+      CNH atual: <strong>${x.categoria_atual}</strong> → Pretendida: <strong>${x.categoria_pretendida}</strong><br>
+      ${x.observacao ? "Obs.: " + x.observacao + "<br>" : ""}
+      <button class="danger" onclick="remover(${x.id})">Remover</button>
+    </div>
+  `).join("");
+}
+
+function gerarPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "mm", "a4");
+
+  const dataAtual = new Date().toLocaleDateString("pt-BR");
+
+  doc.setFontSize(14);
+  doc.text("RELATÓRIO DE INTERESSADOS", 105, 15, { align: "center" });
+
+  doc.setFontSize(11);
+  doc.text("Troca de Categoria de CNH", 105, 22, { align: "center" });
+  doc.text("CB São Lourenço do Sul", 105, 29, { align: "center" });
+  doc.text("Data: " + dataAtual, 14, 38);
+
+  const linhas = interessados.map((x,i)=>[
+    i+1,
+    x.nome_guerra,
+    x.nome_completo,
+    x.id_func,
+    x.categoria_atual,
+    x.categoria_pretendida,
+    x.observacao || ""
+  ]);
+
+  doc.autoTable({
+    startY: 44,
+    head: [["Nº","Nome Guerra","Nome Completo","Id. Func.","Atual","Pretendida","Obs."]],
+    body: linhas,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [15,76,129] }
+  });
+
+  doc.save("relatorio-interessados-cnh.pdf");
+}
+
+carregarMilitares();
+carregarOnline();
+</script>
+
+</body>
+</html>
