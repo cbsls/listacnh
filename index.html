@@ -266,12 +266,14 @@ function renderizar(){
 }
 
 function gerarPDF(){
-  function copiarTexto(){
+  
+function copiarTexto(){
   if(interessados.length === 0){
     alert("Nenhum interessado.");
     return;
   }
 
+  // maior nome para alinhar
   const maiorNome = Math.max(...interessados.map(x => x.nome_guerra.length));
 
   const linhas = interessados.map(x => {
@@ -281,9 +283,19 @@ function gerarPDF(){
 
   const texto = linhas.join("\n");
 
-  navigator.clipboard.writeText(texto);
+  // 🔥 MÉTODO UNIVERSAL (funciona sempre)
+  const textarea = document.createElement("textarea");
+  textarea.value = texto;
+  document.body.appendChild(textarea);
 
-  alert("Lista copiada!");
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+
+  document.execCommand("copy");
+
+  document.body.removeChild(textarea);
+
+  alert("Lista copiada para área de transferência!");
 }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "mm", "a4");
