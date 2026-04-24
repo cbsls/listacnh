@@ -238,33 +238,40 @@ function gerarPDF(){
 
   const dataAtual = new Date().toLocaleDateString("pt-BR");
 
+  // Título
   doc.setFontSize(14);
-  doc.text("RELATÓRIO DE INTERESSADOS", 105, 15, { align: "center" });
+  doc.text("INTERESSADOS - TROCA DE CNH", 105, 15, { align: "center" });
 
-  doc.setFontSize(11);
-  doc.text("Troca de Categoria de CNH", 105, 22, { align: "center" });
-  doc.text("CB São Lourenço do Sul", 105, 29, { align: "center" });
-  doc.text("Data: " + dataAtual, 14, 38);
+  doc.setFontSize(10);
+  doc.text("CB São Lourenço do Sul", 105, 21, { align: "center" });
+  doc.text("Data: " + dataAtual, 14, 30);
 
-  const linhas = interessados.map((x,i)=>[
-    i+1,
+  // Montar linhas simplificadas
+  const linhas = interessados.map(x => [
     x.nome_guerra,
-    x.nome_completo,
-    x.id_func,
-    x.categoria_atual,
-    x.categoria_pretendida,
-    x.observacao || ""
+    `${x.categoria_atual} → ${x.categoria_pretendida}`
   ]);
 
+  // Tabela limpa
   doc.autoTable({
-    startY: 44,
-    head: [["Nº","Nome Guerra","Nome Completo","Id. Func.","Atual","Pretendida","Obs."]],
+    startY: 35,
+    head: [["Nome de Guerra", "Troca"]],
     body: linhas,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [15,76,129] }
+    styles: {
+      fontSize: 10,
+      cellPadding: 2
+    },
+    headStyles: {
+      fillColor: [15,76,129],
+      halign: "center"
+    },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { halign: "center" }
+    }
   });
 
-  doc.save("relatorio-interessados-cnh.pdf");
+  doc.save("interessados-cnh.pdf");
 }
 
 carregarMilitares();
