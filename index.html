@@ -265,15 +265,12 @@ function renderizar(){
   `;
 }
 
-function gerarPDF(){
-  
 function copiarTexto(){
   if(interessados.length === 0){
     alert("Nenhum interessado.");
     return;
   }
 
-  // maior nome para alinhar
   const maiorNome = Math.max(...interessados.map(x => x.nome_guerra.length));
 
   const linhas = interessados.map(x => {
@@ -283,7 +280,6 @@ function copiarTexto(){
 
   const texto = linhas.join("\n");
 
-  // 🔥 MÉTODO UNIVERSAL (funciona sempre)
   const textarea = document.createElement("textarea");
   textarea.value = texto;
   document.body.appendChild(textarea);
@@ -292,17 +288,17 @@ function copiarTexto(){
   textarea.setSelectionRange(0, 99999);
 
   document.execCommand("copy");
-
   document.body.removeChild(textarea);
 
   alert("Lista copiada para área de transferência!");
 }
+
+function gerarPDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "mm", "a4");
 
   const dataAtual = new Date().toLocaleDateString("pt-BR");
 
-  // Título
   doc.setFontSize(14);
   doc.text("INTERESSADOS - TROCA DE CNH", 105, 15, { align: "center" });
 
@@ -310,13 +306,11 @@ function copiarTexto(){
   doc.text("CB São Lourenço do Sul", 105, 21, { align: "center" });
   doc.text("Data: " + dataAtual, 14, 30);
 
-  // Montar linhas simplificadas
   const linhas = interessados.map(x => [
     x.nome_guerra,
     `${x.categoria_atual} → ${x.categoria_pretendida}`
   ]);
 
-  // Tabela limpa
   doc.autoTable({
     startY: 35,
     head: [["Nome de Guerra", "Troca"]],
