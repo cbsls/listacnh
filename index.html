@@ -73,6 +73,9 @@ button.green{background:#15803d}
 
 <button onclick="adicionar()">💾 Salvar interesse</button>
 <button class="green" onclick="gerarPDF()">📄 Gerar relatório PDF</button>
+<button onclick="copiarTexto()" style="background:#374151;">
+📋 Copiar lista WhatsApp
+</button>
 </div>
 
 <div class="card">
@@ -221,44 +224,40 @@ function renderizar(){
   }
 
   lista.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
       ${interessados.map((x,i)=>`
         <div style="
           display:grid;
-          grid-template-columns: 1fr auto auto auto;
+          grid-template-columns: 1fr auto auto;
           align-items:center;
-          gap:12px;
-          background:#f8fafc;
-          border-left:5px solid #0f4c81;
-          padding:10px 12px;
-          border-radius:10px;
+          gap:10px;
+          padding:8px 10px;
+          border-bottom:1px solid #e5e7eb;
           font-size:0.95rem;
         ">
 
-          <div style="font-weight:700;color:#0f4c81;">
-            ${i+1}. ${x.nome_guerra}
+          <!-- NOME -->
+          <div style="font-weight:600;color:#0f4c81;">
+            ${x.nome_guerra}
           </div>
 
-          <div style="font-weight:600;">
-            ${x.categoria_atual}
+          <!-- TROCA -->
+          <div style="white-space:nowrap;font-weight:600;">
+            ${x.categoria_atual} → ${x.categoria_pretendida}
           </div>
 
-          <div style="font-weight:700;">
-            →
+          <!-- LIXEIRA DISCRETA -->
+          <div onclick="remover(${x.id})" title="Excluir" style="
+            cursor:pointer;
+            font-size:0.85rem;
+            opacity:0.5;
+            transition:0.2s;
+          "
+          onmouseover="this.style.opacity=1"
+          onmouseout="this.style.opacity=0.5"
+          >
+            🗑️
           </div>
-
-          <div style="font-weight:600;">
-            ${x.categoria_pretendida}
-          </div>
-
-          <button onclick="remover(${x.id})" title="Excluir" style="
-            width:auto;
-            margin:0;
-            padding:6px 10px;
-            border-radius:8px;
-            background:#b91c1c;
-            color:white;
-          ">🗑️</button>
 
         </div>
       `).join("")}
@@ -267,6 +266,25 @@ function renderizar(){
 }
 
 function gerarPDF(){
+  function copiarTexto(){
+  if(interessados.length === 0){
+    alert("Nenhum interessado.");
+    return;
+  }
+
+  const maiorNome = Math.max(...interessados.map(x => x.nome_guerra.length));
+
+  const linhas = interessados.map(x => {
+    const nome = x.nome_guerra.padEnd(maiorNome + 4, " ");
+    return `${nome}${x.categoria_atual} → ${x.categoria_pretendida}`;
+  });
+
+  const texto = linhas.join("\n");
+
+  navigator.clipboard.writeText(texto);
+
+  alert("Lista copiada!");
+}
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "mm", "a4");
 
