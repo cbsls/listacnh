@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Interesse Troca Categoria CNH</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supase/supase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
@@ -19,10 +19,8 @@ body{background:#eef3f8;color:#1f2937;padding:16px}
 label{font-weight:bold;margin-top:10px;display:block}
 select,input{width:100%;padding:12px;margin-top:6px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem}
 button{width:100%;padding:13px;margin-top:14px;border:none;border-radius:12px;background:#0f4c81;color:white;font-weight:bold;font-size:1rem}
-button.danger{background:#b91c1c}
 button.green{background:#15803d}
 .lista-item{border-left:5px solid #0f4c81;background:#f8fafc;padding:12px;border-radius:12px;margin-bottom:10px}
-.lista-item strong{color:#0f4c81}
 .vazio{text-align:center;color:#64748b;padding:20px}
 .contador{background:#edf6ff;color:#0f4c81;padding:10px;border-radius:999px;text-align:center;font-weight:bold;margin-bottom:12px}
 .status{font-size:.85rem;color:#64748b;text-align:center;margin-top:8px}
@@ -33,11 +31,12 @@ button.green{background:#15803d}
 <div class="container">
 
 <div class="topo">
-<h1>🚘 Interesse em Troca de ria CNH</h1>
+<h1>🚘 Interesse em Troca de Categoria CNH</h1>
 <p>Cadastro online dos militares interessados</p>
 </div>
 
 <div class="card">
+
 <label>Militar</label>
 <select id="militar" onchange="preencherMilitar()">
 <option value="">Selecione o militar</option>
@@ -49,6 +48,7 @@ button.green{background:#15803d}
 <label>Id. Func.</label>
 <input id="idFunc" readonly>
 
+<label>Categoria atual</label>
 <select id="categoriaAtual">
 <option value="">Selecione</option>
 <option>A</option>
@@ -61,6 +61,7 @@ button.green{background:#15803d}
 <option>E</option>
 </select>
 
+<label>Categoria pretendida</label>
 <select id="categoriaPretendida">
 <option value="">Selecione</option>
 <option>AB</option>
@@ -71,7 +72,7 @@ button.green{background:#15803d}
 <option>E</option>
 </select>
 
-<label>Possui Curso COV?</label>
+<label>Possui Curso COV</label>
 <select id="possuiCOV">
 <option value="">Selecione</option>
 <option>SIM</option>
@@ -80,9 +81,8 @@ button.green{background:#15803d}
 
 <button onclick="adicionar()">💾 Salvar interesse</button>
 <button class="green" onclick="gerarPDF()">📄 Gerar relatório PDF</button>
-<button onclick="copiarTexto()" style="background:#374151;">
-📋 Copiar lista WhatsApp
-</button>
+<button onclick="copiarTexto()" style="background:#374151;">📋 Copiar lista WhatsApp</button>
+
 </div>
 
 <div class="card">
@@ -153,8 +153,7 @@ async function carregarOnline(){
     .order("nome_guerra", { ascending: true });
 
   if(error){
-    console.error(error);
-    status.textContent = "Erro ao carregar dados do Supabase.";
+    status.textContent = "Erro ao carregar dados.";
     return;
   }
 
@@ -165,11 +164,8 @@ async function carregarOnline(){
 
 async function adicionar(){
   const idx = militar.value;
-  const atual = categoriaAtual.value;
-  const pretendida = categoriaPretendida.value;
-
-  if(idx === "" || !atual || !pretendida){
-    alert("Preencha militar, categoria atual e categoria pretendida.");
+  if(idx === "" || !categoriaAtual.value || !categoriaPretendida.value){
+    alert("Preencha os campos obrigatórios.");
     return;
   }
 
@@ -179,8 +175,8 @@ async function adicionar(){
     nome_guerra: m[0],
     nome_completo: m[1],
     id_func: m[2],
-    categoria_atual: atual,
-    categoria_pretendida: pretendida,
+    categoria_atual: categoriaAtual.value,
+    categoria_pretendida: categoriaPretendida.value,
     possui_cov: possuiCOV.value || null,
     atualizado_em: new Date().toISOString()
   };
@@ -190,8 +186,7 @@ async function adicionar(){
     .upsert(registro, { onConflict: "id_func" });
 
   if(error){
-    console.error(error);
-    alert("Erro ao salvar no Supabase.");
+    alert("Erro ao salvar.");
     return;
   }
 
@@ -205,113 +200,34 @@ async function adicionar(){
   await carregarOnline();
 }
 
-async function remover(id){
-  if(!confirm("Remover este interessado?")) return;
-
-  const { error } = await supabaseClient
-    .from("cnh_interessados")
-    .delete()
-    .eq("id", id);
-
-  if(error){
-    console.error(error);
-    alert("Erro ao remover.");
-    return;
-  }
-
-  await carregarOnline();
-}
-
 function renderizar(){
   contador.textContent = "Interessados: " + interessados.length;
 
   if(interessados.length === 0){
-    lista.innerHTML = '<div class="vazio">Nenhum interessado cadastrado ainda.</div>';
+    lista.innerHTML = '<div class="vazio">Nenhum interessado cadastrado.</div>';
     return;
   }
 
-  lista.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      ${interessados.map((x,i)=>`
-        <div style="
-          display:grid;
-          grid-template-columns: 1fr auto auto;
-          align-items:center;
-          gap:10px;
-          padding:8px 10px;
-          border-bottom:1px solid #e5e7eb;
-          font-size:0.95rem;
-        ">
-
-          <!-- NOME -->
-          <div style="font-weight:600;color:#0f4c81;">
-            ${x.nome_guerra}
-          </div>
-
-          <!-- TROCA -->
-          <div style="white-space:nowrap;font-weight:600;">
-            ${x.categoria_atual} → ${x.categoria_pretendida}
-          </div>
-
-          <!-- LIXEIRA DISCRETA -->
-          <div onclick="remover(${x.id})" title="Excluir" style="
-            cursor:pointer;
-            font-size:0.85rem;
-            opacity:0.5;
-            transition:0.2s;
-          "
-          onmouseover="this.style.opacity=1"
-          onmouseout="this.style.opacity=0.5"
-          >
-            🗑️
-          </div>
-
-        </div>
-      `).join("")}
+  lista.innerHTML = interessados.map(x => `
+    <div class="lista-item">
+      <strong>${x.nome_guerra}</strong><br>
+      ${x.categoria_atual} → ${x.categoria_pretendida} | COV: ${x.possui_cov || "-"}
     </div>
-  `;
+  `).join("");
 }
 
 function copiarTexto(){
-  if(interessados.length === 0){
-    alert("Nenhum interessado.");
-    return;
-  }
+  const texto = interessados.map(x =>
+    `${x.nome_guerra} - ${x.categoria_atual} → ${x.categoria_pretendida} | COV: ${x.possui_cov || "-"}`
+  ).join("\n");
 
-  const maiorNome = Math.max(...interessados.map(x => x.nome_guerra.length));
-
-  const linhas = interessados.map(x => {
-    const nome = x.nome_guerra.padEnd(maiorNome + 4, " ");
-    return `${nome}${x.categoria_atual} → ${x.categoria_pretendida}`;
-  });
-
-  const texto = linhas.join("\n");
-
-  const textarea = document.createElement("textarea");
-  textarea.value = texto;
-  document.body.appendChild(textarea);
-
-  textarea.select();
-  textarea.setSelectionRange(0, 99999);
-
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
-
-  alert("Lista copiada para área de transferência!");
+  navigator.clipboard.writeText(texto);
+  alert("Copiado!");
 }
 
 function gerarPDF(){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "mm", "a4");
-
-  const dataAtual = new Date().toLocaleDateString("pt-BR");
-
-  doc.setFontSize(14);
-  doc.text("INTERESSADOS - TROCA DE CNH", 105, 15, { align: "center" });
-
-  doc.setFontSize(10);
-  doc.text("CB São Lourenço do Sul", 105, 21, { align: "center" });
-  doc.text("Data: " + dataAtual, 14, 30);
+  const doc = new jsPDF();
 
   const linhas = interessados.map(x => [
     x.nome_completo,
@@ -321,28 +237,15 @@ function gerarPDF(){
     x.possui_cov || "-"
   ]);
 
+  doc.text("INTERESSADOS - TROCA DE CNH", 14, 15);
+
   doc.autoTable({
-    startY: 35,
-    head: [["Nome", "Id Func", "CNH Atual", "CNH Pretendida", "COV"]],
-    body: linhas,
-    styles: {
-      fontSize: 9,
-      cellPadding: 2
-    },
-    headStyles: {
-      fillColor: [15,76,129],
-      halign: "center"
-    },
-    columnStyles: {
-      0: { cellWidth: 60 },               // Nome
-      1: { cellWidth: 25, halign: "center" }, // Id Func
-      2: { cellWidth: 25, halign: "center" }, // CNH Atual
-      3: { cellWidth: 30, halign: "center" }, // CNH Pretendida
-      4: { cellWidth: 20, halign: "center" }  // COV
-    }
+    startY: 20,
+    head: [["Nome","Id Func","CNH Atual","CNH Pretendida","COV"]],
+    body: linhas
   });
 
-  doc.save("interessados-cnh.pdf");
+  doc.save("relatorio-cnh.pdf");
 }
 
 carregarMilitares();
