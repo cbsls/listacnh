@@ -307,13 +307,15 @@ function gerarPDF(){
   doc.text("Data: " + dataAtual, 14, 30);
 
   const linhas = interessados.map(x => [
-    x.nome_guerra,
-    `${x.categoria_atual} → ${x.categoria_pretendida}`
+    x.nome_completo,
+    x.id_func,
+    x.categoria_atual,
+    x.categoria_pretendida
   ]);
 
   doc.autoTable({
     startY: 35,
-    head: [["Nome de Guerra", "Troca"]],
+    head: [["Nome", "Id Func", "CNH Atual", "CNH Pretendida"]],
     body: linhas,
     styles: {
       fontSize: 10,
@@ -324,8 +326,10 @@ function gerarPDF(){
       halign: "center"
     },
     columnStyles: {
-      0: { cellWidth: 100 },
-      1: { halign: "center" }
+      0: { cellWidth: 70 },
+      1: { cellWidth: 30, halign: "center" },
+      2: { cellWidth: 30, halign: "center" },
+      3: { cellWidth: 30, halign: "center" }
     }
   });
 
