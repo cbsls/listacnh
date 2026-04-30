@@ -71,8 +71,12 @@ button.green{background:#15803d}
 <option>E</option>
 </select>
 
-<label>Observação</label>
-<input id="observacao" placeholder="Opcional">
+<label>Possui Curso COV?</label>
+<select id="possuiCOV">
+<option value="">Selecione</option>
+<option>SIM</option>
+<option>NÃO</option>
+</select>
 
 <button onclick="adicionar()">💾 Salvar interesse</button>
 <button class="green" onclick="gerarPDF()">📄 Gerar relatório PDF</button>
@@ -177,7 +181,7 @@ async function adicionar(){
     id_func: m[2],
     categoria_atual: atual,
     categoria_pretendida: pretendida,
-    observacao: observacao.value || null,
+    possui_cov: possuiCOV.value || null,
     atualizado_em: new Date().toISOString()
   };
 
@@ -196,7 +200,7 @@ async function adicionar(){
   idFunc.value="";
   categoriaAtual.value="";
   categoriaPretendida.value="";
-  observacao.value="";
+  possuiCOV.value="";
 
   await carregarOnline();
 }
@@ -313,15 +317,16 @@ function gerarPDF(){
     x.nome_completo,
     x.id_func,
     x.categoria_atual,
-    x.categoria_pretendida
+    x.categoria_pretendida,
+    x.possui_cov || "-"
   ]);
 
   doc.autoTable({
     startY: 35,
-    head: [["Nome", "Id Func", "CNH Atual", "CNH Pretendida"]],
+    head: [["Nome", "Id Func", "CNH Atual", "CNH Pretendida", "COV"]],
     body: linhas,
     styles: {
-      fontSize: 10,
+      fontSize: 9,
       cellPadding: 2
     },
     headStyles: {
@@ -329,10 +334,11 @@ function gerarPDF(){
       halign: "center"
     },
     columnStyles: {
-      0: { cellWidth: 70 },
-      1: { cellWidth: 30, halign: "center" },
-      2: { cellWidth: 30, halign: "center" },
-      3: { cellWidth: 30, halign: "center" }
+      0: { cellWidth: 60 },               // Nome
+      1: { cellWidth: 25, halign: "center" }, // Id Func
+      2: { cellWidth: 25, halign: "center" }, // CNH Atual
+      3: { cellWidth: 30, halign: "center" }, // CNH Pretendida
+      4: { cellWidth: 20, halign: "center" }  // COV
     }
   });
 
